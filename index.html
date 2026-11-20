@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>숫자 맞히기</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --text: #1f2328;
+    --muted: #6b7280;
+    --accent: #4f46e5;
+    --up: #dc2626;
+    --down: #2563eb;
+    --ok: #16a34a;
+    --track: #e5e7eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171b;
+      --card: #202228;
+      --text: #ececf1;
+      --muted: #9ca3af;
+      --accent: #818cf8;
+      --up: #f87171;
+      --down: #60a5fa;
+      --ok: #4ade80;
+      --track: #33363f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    text-align: center;
+  }
+  h1 { margin: 0 0 6px; font-size: 1.6rem; }
+  .sub { margin: 0 0 22px; color: var(--muted); }
+  .range { font-size: 2rem; font-weight: 700; letter-spacing: .02em; margin-bottom: 8px; }
+  .bar { position: relative; height: 10px; background: var(--track); border-radius: 99px; margin: 0 0 22px; overflow: hidden; }
+  .bar span { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 99px; transition: left .3s, width .3s; }
+  form { display: flex; gap: 8px; }
+  input {
+    flex: 1; min-width: 0;
+    font-size: 1.2rem; padding: 12px 14px;
+    border: 2px solid var(--track); border-radius: 10px;
+    background: transparent; color: var(--text);
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  button {
+    font-size: 1rem; font-weight: 600; padding: 12px 18px;
+    border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff;
+  }
+  button:disabled { opacity: .4; cursor: default; }
+  .msg { min-height: 1.6em; margin: 18px 0 6px; font-size: 1.15rem; font-weight: 600; }
+  .msg.up { color: var(--up); }
+  .msg.down { color: var(--down); }
+  .msg.ok { color: var(--ok); }
+  .stats { display: flex; justify-content: center; gap: 24px; color: var(--muted); margin-top: 6px; }
+  .stats b { color: var(--text); }
+  .history { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .history span { padding: 4px 10px; border-radius: 99px; background: var(--track); font-size: .9rem; }
+  #restart { margin-top: 20px; display: none; width: 100%; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>🎯 숫자 맞히기</h1>
+    <p class="sub">1부터 100 사이의 숫자를 맞혀 보세요!</p>
+
+    <div class="range" id="range">1 ~ 100</div>
+    <div class="bar"><span id="barFill"></span></div>
+
+    <form id="form">
+      <input id="guess" type="number" inputmode="numeric" min="1" max="100" placeholder="숫자 입력" autofocus>
+      <button id="submit" type="submit">확인</button>
+    </form>
+
+    <div class="msg" id="msg"></div>
+    <div class="stats">
+      <div>시도 <b id="tries">0</b>회</div>
+      <div>최고 기록 <b id="best">-</b></div>
+    </div>
+    <div class="history" id="history"></div>
+
+    <button id="restart" type="button">다시 하기</button>
+  </main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let answer, low, high, tries, over;
+
+  function loadBest() {
+    try { return Number(localStorage.getItem("guess-best")) || null; } catch { return null; }
+  }
+  function saveBest(n) {
+    try { localStorage.setItem("guess-best", String(n)); } catch {}
+  }
+
+  function render() {
+    $("range").textContent = `${low} ~ ${high}`;
+    $("barFill").style.left = (low - 1) + "%";
+    $("barFill").style.width = (high - low + 1) + "%";
+    $("tries").textContent = tries;
+    const best = loadBest();
+    $("best").textContent = best ? best + "회" : "-";
+  }
+
+  function start() {
+    answer = Math.floor(Math.random() * 100) + 1;
+    low = 1; high = 100; tries = 0; over = false;
+    $("msg").textContent = "";
+    $("msg").className = "msg";
+    $("history").innerHTML = "";
+    $("guess").value = "";
+    $("guess").disabled = false;
+    $("submit").disabled = false;
+    $("restart").style.display = "none";
+    render();
+    $("guess").focus();
+  }
+
+  function addHistory(n, mark) {
+    const chip = document.createElement("span");
+    chip.textContent = `${n} ${mark}`;
+    $("history").appendChild(chip);
+  }
+
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (over) return;
+    const n = Number($("guess").value);
+    const msg = $("msg");
+
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      msg.textContent = "1부터 100 사이의 정수를 입력하세요.";
+      msg.className = "msg";
+      return;
+    }
+    if (n < low || n > high) {
+      msg.textContent = `힌트: 정답은 ${low}~${high} 사이에 있어요!`;
+      msg.className = "msg";
+      $("guess").select();
+      return;
+    }
+
+    tries++;
+    if (n < answer) {
+      low = n + 1;
+      msg.textContent = `${n}보다 커요 ⬆️`;
+      msg.className = "msg up";
+      addHistory(n, "⬆️");
+    } else if (n > answer) {
+      high = n - 1;
+      msg.textContent = `${n}보다 작아요 ⬇️`;
+      msg.className = "msg down";
+      addHistory(n, "⬇️");
+    } else {
+      low = high = n;
+      over = true;
+      const best = loadBest();
+      const record = !best || tries < best;
+      if (record) saveBest(tries);
+      msg.textContent = `🎉 정답! ${tries}번 만에 맞혔어요` + (record ? " (신기록!)" : "");
+      msg.className = "msg ok";
+      addHistory(n, "✅");
+      $("guess").disabled = true;
+      $("submit").disabled = true;
+      $("restart").style.display = "block";
+    }
+    render();
+    $("guess").value = "";
+    if (!over) $("guess").focus();
+  });
+
+  $("restart").addEventListener("click", start);
+  start();
+</script>
+</body>
+</html>
