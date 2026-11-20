@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 정보</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1b1d21;
+    --muted: #6b7280;
+    --line: #e6e8ec;
+    --accent: #4f46e5;
+    --rise: #d92d20;   /* 상승: 빨강 (한국식) */
+    --fall: #1d64d8;   /* 하락: 파랑 */
+    --chip: #eef0f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121317;
+      --card: #1c1e24;
+      --text: #ececf1;
+      --muted: #9aa0ab;
+      --line: #2c2f37;
+      --accent: #8b93ff;
+      --rise: #ff6b5e;
+      --fall: #5b9bff;
+      --chip: #262931;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 16px 40px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  h1 { margin: 0; font-size: 1.5rem; }
+  #today { color: var(--muted); }
+  h2 { font-size: .95rem; color: var(--muted); font-weight: 600; margin: 26px 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  h2 small { font-weight: 400; font-size: .8rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+
+  /* 날씨 */
+  .weather-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .loc { display: flex; gap: 8px; align-items: center; }
+  select, .btn {
+    font: inherit; font-size: .9rem; padding: 7px 10px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--chip); color: var(--text); cursor: pointer;
+  }
+  .weather-main { display: flex; align-items: center; gap: 16px; }
+  .icon { font-size: 3.2rem; line-height: 1; }
+  .temp { font-size: 2.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .desc { color: var(--muted); }
+  .weather-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+  .weather-grid div { background: var(--chip); border-radius: 10px; padding: 10px 12px; }
+  .weather-grid span { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
+  .weather-grid b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+  /* 시세 */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .quote .name { color: var(--muted); font-size: .9rem; }
+  .quote .price { font-size: 1.6rem; font-weight: 700; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .quote .chg { font-size: .95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rise { color: var(--rise); }
+  .fall { color: var(--fall); }
+  .flat { color: var(--muted); }
+  .stale { font-size: .75rem; color: var(--muted); margin-left: 4px; }
+  .note { color: var(--muted); font-size: .9rem; }
+  .grid > .note { grid-column: 1 / -1; margin: 0; }
+  footer { margin-top: 28px; color: var(--muted); font-size: .8rem; line-height: 1.6; }
+
+  @media (max-width: 560px) {
+    .weather-grid { grid-template-columns: repeat(2, 1fr); }
+    .quote .price { font-size: 1.3rem; }
+    .grid { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>☀️ 오늘의 정보</h1>
+    <div id="today"></div>
+  </header>
+
+  <h2>날씨</h2>
+  <section class="card">
+    <div class="weather-top">
+      <div class="loc">
+        <select id="city" aria-label="지역 선택"></select>
+        <button class="btn" id="geo" type="button">📍 내 위치</button>
+      </div>
+      <span class="note" id="wUpdated"></span>
+    </div>
+    <div id="weather"><p class="note">날씨 불러오는 중…</p></div>
+  </section>
+
+  <h2>환율 <small id="fxTime"></small></h2>
+  <section class="grid" id="fx"></section>
+
+  <h2>국내 지수</h2>
+  <section class="grid" id="kr"></section>
+
+  <h2>미국 지수</h2>
+  <section class="grid" id="us"></section>
+
+  <footer>
+    날씨: Open-Meteo (열 때마다 새로 받아옴) · 환율·지수: Yahoo Finance (약 1시간마다 갱신, 실시간 아님)<br>
+    <span id="mUpdated"></span>
+  </footer>
+</div>
+
+<script>
+  const CITIES = {
+    "서울": [37.5665, 126.978], "인천": [37.4563, 126.7052], "수원": [37.2636, 127.0286],
+    "대전": [36.3504, 127.3845], "대구": [35.8714, 128.6014], "광주": [35.1595, 126.8526],
+    "부산": [35.1796, 129.0756], "울산": [35.5384, 129.3114], "강릉": [37.7519, 128.8761],
+    "제주": [33.4996, 126.5312],
+  };
+
+  // WMO 날씨 코드 → [아이콘, 설명]
+  function weatherInfo(code) {
+    if (code === 0) return ["☀️", "맑음"];
+    if (code <= 2) return ["🌤️", "구름 조금"];
+    if (code === 3) return ["☁️", "흐림"];
+    if (code <= 48) return ["🌫️", "안개"];
+    if (code <= 57) return ["🌦️", "이슬비"];
+    if (code <= 67) return ["🌧️", "비"];
+    if (code <= 77) return ["🌨️", "눈"];
+    if (code <= 82) return ["🌧️", "소나기"];
+    if (code <= 86) return ["🌨️", "눈 소나기"];
+    return ["⛈️", "뇌우"];
+  }
+
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  const fmt = (n, d = 2) => n.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const timeStr = (iso) => new Date(iso).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" });
+
+  document.getElementById("today").textContent =
+    new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Seoul" });
+
+  /* ---------- 날씨 ---------- */
+  const citySel = document.getElementById("city");
+  for (const name of Object.keys(CITIES)) citySel.add(new Option(name, name));
+  const myLoc = new Option("내 위치", "__geo");
+
+  async function loadWeather(lat, lon) {
+    const box = document.getElementById("weather");
+    box.innerHTML = '<p class="note">날씨 불러오는 중…</p>';
+    const url = "https://api.open-meteo.com/v1/forecast"
+      + `?latitude=${lat}&longitude=${lon}`
+      + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m"
+      + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
+      + "&timezone=Asia%2FSeoul&forecast_days=1&wind_speed_unit=ms";
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.status);
+      const d = await res.json();
+      const c = d.current, day = d.daily;
+      const [icon, desc] = weatherInfo(c.weather_code);
+      box.innerHTML = `
+        <div class="weather-main">
+          <div class="icon">${icon}</div>
+          <div>
+            <div class="temp">${Math.round(c.temperature_2m)}°</div>
+            <div class="desc">${desc} · 체감 ${Math.round(c.apparent_temperature)}° · 최고 ${Math.round(day.temperature_2m_max[0])}° / 최저 ${Math.round(day.temperature_2m_min[0])}°</div>
+          </div>
+        </div>
+        <div class="weather-grid">
+          <div><span>강수확률</span><b>${day.precipitation_probability_max[0] ?? "-"}%</b></div>
+          <div><span>오늘 강수량</span><b>${fmt(day.precipitation_sum[0], 1)}mm</b></div>
+          <div><span>습도</span><b>${c.relative_humidity_2m}%</b></div>
+          <div><span>바람</span><b>${fmt(c.wind_speed_10m, 1)}m/s</b></div>
+        </div>`;
+      document.getElementById("wUpdated").textContent = timeStr(c.time + ":00+09:00") + " 기준";
+    } catch (e) {
+      box.innerHTML = '<p class="note">날씨를 불러오지 못했어요. 잠시 후 새로고침해 주세요.</p>';
+    }
+  }
+
+  function useCity(name) {
+    store.set("dash-loc", { city: name });
+    loadWeather(...CITIES[name]);
+  }
+
+  function useGeo() {
+    if (!navigator.geolocation) return alert("이 브라우저는 위치 기능을 지원하지 않아요.");
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        const lat = p.coords.latitude.toFixed(3), lon = p.coords.longitude.toFixed(3);
+        if (!myLoc.parentNode) citySel.add(myLoc, 0);
+        citySel.value = "__geo";
+        store.set("dash-loc", { lat, lon });
+        loadWeather(lat, lon);
+      },
+      () => alert("위치 권한이 허용되지 않았어요. 목록에서 지역을 골라 주세요."),
+      { timeout: 10000 }
+    );
+  }
+
+  citySel.addEventListener("change", () => {
+    if (citySel.value === "__geo") return useGeo();
+    useCity(citySel.value);
+  });
+  document.getElementById("geo").addEventListener("click", useGeo);
+
+  const saved = store.get("dash-loc");
+  if (saved?.lat) {
+    citySel.add(myLoc, 0); citySel.value = "__geo";
+    loadWeather(saved.lat, saved.lon);
+  } else {
+    const name = saved?.city in CITIES ? saved.city : "서울";
+    citySel.value = name;
+    loadWeather(...CITIES[name]);
+  }
+
+  /* ---------- 환율·지수 ---------- */
+  function quoteCard(q) {
+    const el = document.createElement("div");
+    el.className = "card quote";
+    if (!q) { el.innerHTML = '<div class="note">데이터 없음</div>'; return el; }
+    let cls = "flat", arrow = "", chg = "-";
+    if (q.change != null) {
+      cls = q.change > 0 ? "rise" : q.change < 0 ? "fall" : "flat";
+      arrow = q.change > 0 ? "▲" : q.change < 0 ? "▼" : "";
+      chg = `${arrow} ${fmt(Math.abs(q.change), q.digits)} (${q.changePercent >= 0 ? "+" : ""}${fmt(q.changePercent, 2)}%)`;
+    }
+    el.innerHTML = `
+      <div class="name">${q.name}${q.stale ? '<span class="stale">(이전 값)</span>' : ""}</div>
+      <div class="price">${fmt(q.price, q.digits)}${q.unit ? `<small style="font-size:.6em;font-weight:500"> ${q.unit}</small>` : ""}</div>
+      <div class="chg ${cls}">${chg}</div>`;
+    return el;
+  }
+
+  async function loadMarkets() {
+    const groups = { fx: ["usdkrw", "jpykrw"], kr: ["kospi", "kosdaq"], us: ["nasdaq", "dow"] };
+    try {
+      const res = await fetch("data.json?t=" + Date.now());
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      for (const [id, keys] of Object.entries(groups)) {
+        const box = document.getElementById(id);
+        box.replaceChildren(...keys.map((k) => quoteCard(data.items[k])));
+      }
+      document.getElementById("mUpdated").textContent = "환율·지수 마지막 갱신: " + timeStr(data.updatedAt);
+      document.getElementById("fxTime").textContent = timeStr(data.updatedAt) + " 기준";
+    } catch {
+      for (const id of Object.keys(groups)) {
+        document.getElementById(id).innerHTML = '<p class="note">아직 데이터가 없어요. GitHub Actions가 처음 실행되면 나타나요.</p>';
+      }
+    }
+  }
+  loadMarkets();
+</script>
+</body>
+</html>
