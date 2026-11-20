@@ -15,6 +15,7 @@
     --rise: #d92d20;   /* 상승: 빨강 (한국식) */
     --fall: #1d64d8;   /* 하락: 파랑 */
     --chip: #eef0f4;
+    --rain: #2a78d6;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -27,6 +28,7 @@
       --rise: #ff6b5e;
       --fall: #5b9bff;
       --chip: #262931;
+      --rain: #3987e5;
     }
   }
   * { box-sizing: border-box; }
@@ -61,6 +63,34 @@
   .weather-grid div { background: var(--chip); border-radius: 10px; padding: 10px 12px; }
   .weather-grid span { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 2px; }
   .weather-grid b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+  /* 시간대별 강수확률 막대 그래프 */
+  .rain { margin-top: 20px; }
+  .rain-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; margin-bottom: 26px; font-weight: 600; font-size: .95rem; }
+  .rain-body { display: grid; grid-template-columns: 34px 1fr; column-gap: 6px; }
+  .rain-y { position: relative; height: 120px; font-size: .72rem; color: var(--muted); }
+  .rain-y span { position: absolute; right: 0; transform: translateY(-50%); font-variant-numeric: tabular-nums; }
+  .rain-plot { position: relative; height: 120px; }
+  .rain-gridline { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--line); }
+  .rain-gridline.base { border-top-color: var(--muted); opacity: .5; }
+  .rain-cols { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; }
+  .rain-col { position: relative; border-radius: 4px 4px 0 0; outline: none; cursor: default; }
+  .rain-col:hover, .rain-col:focus-visible, .rain-col.active { background: var(--chip); }
+  .rain-col .bar { position: absolute; left: 15%; right: 15%; bottom: 0; background: var(--rain); border-radius: 4px 4px 0 0; }
+  .rain-col .peak { position: absolute; left: 50%; transform: translateX(-50%); font-size: .72rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rain-col.newday { box-shadow: -2px 0 0 0 var(--card), -3px 0 0 0 var(--line); }
+  .rain-x { grid-column: 2; display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; margin-top: 6px; font-size: .72rem; color: var(--muted); }
+  .rain-x span { white-space: nowrap; overflow: visible; }
+  .rain-tip {
+    position: absolute; z-index: 2; pointer-events: none; display: none;
+    background: var(--text); color: var(--card); font-size: .8rem; line-height: 1.4;
+    padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -100%);
+  }
+  .rain details { margin-top: 12px; font-size: .85rem; color: var(--muted); }
+  .rain summary { cursor: pointer; }
+  .rain table { border-collapse: collapse; margin-top: 8px; width: 100%; font-variant-numeric: tabular-nums; color: var(--text); }
+  .rain th, .rain td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+  .rain th:first-child, .rain td:first-child { text-align: left; }
 
   /* 시세 */
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -161,7 +191,8 @@
       + `?latitude=${lat}&longitude=${lon}`
       + "&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m"
       + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
-      + "&timezone=Asia%2FSeoul&forecast_days=1&wind_speed_unit=ms";
+      + "&hourly=precipitation_probability,precipitation"
+      + "&timezone=Asia%2FSeoul&forecast_days=2&wind_speed_unit=ms";
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(res.status);
@@ -181,11 +212,107 @@
           <div><span>오늘 강수량</span><b>${fmt(day.precipitation_sum[0], 1)}mm</b></div>
           <div><span>습도</span><b>${c.relative_humidity_2m}%</b></div>
           <div><span>바람</span><b>${fmt(c.wind_speed_10m, 1)}m/s</b></div>
-        </div>`;
+        </div>
+        <div class="rain" id="rain"></div>`;
+      renderRain(d.hourly, c.time);
       document.getElementById("wUpdated").textContent = timeStr(c.time + ":00+09:00") + " 기준";
     } catch (e) {
       box.innerHTML = '<p class="note">날씨를 불러오지 못했어요. 잠시 후 새로고침해 주세요.</p>';
     }
+  }
+
+  /* 시간대별 강수확률 (앞으로 24시간) */
+  function hourName(h) {
+    if (h === 0) return "자정";
+    if (h === 12) return "정오";
+    return (h < 12 ? "오전 " : "오후 ") + (h % 12) + "시";
+  }
+
+  function renderRain(hourly, nowTime) {
+    const box = document.getElementById("rain");
+    if (!hourly?.time) { box.remove(); return; }
+    let start = hourly.time.findIndex((t) => t.slice(0, 13) === nowTime.slice(0, 13));
+    if (start < 0) start = 0;
+    const today = nowTime.slice(0, 10);
+    const rows = hourly.time.slice(start, start + 24).map((t, i) => ({
+      hour: Number(t.slice(11, 13)),
+      tomorrow: t.slice(0, 10) !== today,
+      prob: hourly.precipitation_probability[start + i] ?? 0,
+      mm: hourly.precipitation[start + i] ?? 0,
+    }));
+    if (!rows.length) { box.remove(); return; }
+
+    const max = Math.max(...rows.map((r) => r.prob));
+    const peakIdx = rows.findIndex((r) => r.prob === max);
+    const label = (r) => (r.tomorrow ? "내일 " : "") + hourName(r.hour);
+    const peakText = max > 0 ? `최고 ${max}% · ${label(rows[peakIdx])}` : "비 소식 없음";
+
+    box.innerHTML = `
+      <div class="rain-head"><span>앞으로 24시간 강수확률</span><span class="note">${peakText}</span></div>
+      <div class="rain-body">
+        <div class="rain-y"><span style="top:0">100%</span><span style="top:50%">50%</span><span style="top:100%">0%</span></div>
+        <div class="rain-plot" role="img" aria-label="앞으로 24시간 강수확률 막대 그래프. ${peakText}">
+          <div class="rain-gridline" style="top:0"></div>
+          <div class="rain-gridline" style="top:50%"></div>
+          <div class="rain-gridline base" style="top:100%"></div>
+          <div class="rain-cols"></div>
+          <div class="rain-tip"></div>
+        </div>
+        <div class="rain-x"></div>
+      </div>
+      <details><summary>표로 보기</summary>
+        <table><thead><tr><th>시간</th><th>강수확률</th><th>강수량</th></tr></thead><tbody></tbody></table>
+      </details>`;
+
+    const cols = box.querySelector(".rain-cols");
+    const xs = box.querySelector(".rain-x");
+    const tip = box.querySelector(".rain-tip");
+    const tbody = box.querySelector("tbody");
+    const plot = box.querySelector(".rain-plot");
+
+    rows.forEach((r, i) => {
+      const col = document.createElement("div");
+      col.className = "rain-col" + (r.hour === 0 && i > 0 ? " newday" : "");
+      col.tabIndex = 0;
+      col.setAttribute("aria-label", `${label(r)} 강수확률 ${r.prob}%, 강수량 ${fmt(r.mm, 1)}mm`);
+      if (r.prob > 0) {
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.height = Math.max(r.prob, 2) + "%";
+        col.appendChild(bar);
+      }
+      if (i === peakIdx && max > 0) {
+        const p = document.createElement("div");
+        p.className = "peak";
+        p.textContent = max + "%";
+        p.style.bottom = `calc(${max}% + 2px)`;
+        col.appendChild(p);
+      }
+      const show = () => {
+        cols.querySelectorAll(".active").forEach((el) => el.classList.remove("active"));
+        col.classList.add("active");
+        tip.innerHTML = `<b>${label(r)}</b><br>강수확률 ${r.prob}% · ${fmt(r.mm, 1)}mm`;
+        tip.style.display = "block";
+        const x = col.offsetLeft + col.offsetWidth / 2;
+        const half = tip.offsetWidth / 2;
+        tip.style.left = Math.min(Math.max(x, half), plot.offsetWidth - half) + "px";
+        tip.style.top = `calc(${100 - r.prob}% - ${i === peakIdx && max > 0 ? 22 : 6}px)`;
+      };
+      const hide = () => { col.classList.remove("active"); tip.style.display = "none"; };
+      col.addEventListener("pointerenter", show);
+      col.addEventListener("pointerleave", hide);
+      col.addEventListener("focus", show);
+      col.addEventListener("blur", hide);
+      cols.appendChild(col);
+
+      const x = document.createElement("span");
+      if (i % 3 === 0) x.textContent = r.hour === 0 ? "0시" : r.hour + "시";
+      xs.appendChild(x);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${label(r)}</td><td>${r.prob}%</td><td>${fmt(r.mm, 1)}mm</td>`;
+      tbody.appendChild(tr);
+    });
   }
 
   function useCity(name) {
