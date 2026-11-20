@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-11-20T20:02:56.003Z",
+  "updatedAt": "2026-11-20T20:55:46.721Z",
   "items": {
     "usdkrw": {
       "name": "원/달러",
       "unit": "원",
       "digits": 2,
-      "price": 1345.12,
-      "change": 11.5,
-      "changePercent": 0.8623146023604925,
-      "marketTime": "2026-11-20T20:02:54.000Z"
+      "price": 1346.26,
+      "change": 12.6400000000001,
+      "changePercent": 0.947796223811888,
+      "marketTime": "2026-11-20T20:55:23.000Z"
     },
     "jpykrw": {
       "name": "원/100엔",
       "unit": "원",
       "digits": 2,
-      "price": 846.4000000000001,
-      "change": 13.5,
-      "changePercent": 1.6208428382759033,
-      "marketTime": "2026-11-20T20:01:43.000Z"
+      "price": 846.9,
+      "change": 13.999999999999886,
+      "changePercent": 1.6808740545083305,
+      "marketTime": "2026-11-20T20:51:44.000Z"
     },
     "kospi": {
       "name": "코스피",
@@ -41,19 +41,19 @@
       "name": "나스닥",
       "unit": "",
       "digits": 2,
-      "price": 22795.086,
-      "change": -1084.1140000000014,
-      "changePercent": -4.539992964588435,
-      "marketTime": "2026-11-20T20:02:54.000Z"
+      "price": 22542.443,
+      "change": -1336.7570000000014,
+      "changePercent": -5.597997420349096,
+      "marketTime": "2026-11-20T20:55:24.000Z"
     },
     "dow": {
       "name": "다우존스",
       "unit": "",
       "digits": 2,
-      "price": 48440.65,
-      "change": -656.4099999999962,
-      "changePercent": -1.3369639648483966,
-      "marketTime": "2026-11-20T20:02:53.000Z"
+      "price": 48065.61,
+      "change": -1031.449999999997,
+      "changePercent": -2.1008386245530732,
+      "marketTime": "2026-11-20T20:55:27.000Z"
     }
   }
 }
