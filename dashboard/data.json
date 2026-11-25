@@ -1,41 +1,41 @@
 {
-  "updatedAt": "2026-11-24T23:52:56.120Z",
+  "updatedAt": "2026-11-25T01:17:44.370Z",
   "items": {
     "usdkrw": {
       "name": "원/달러",
       "unit": "원",
       "digits": 2,
-      "price": 1342.33,
-      "change": 0.30999999999994543,
-      "changePercent": 0.02309950671375579,
-      "marketTime": "2026-11-24T23:52:54.000Z"
+      "price": 1344.78,
+      "change": 3.7000000000000455,
+      "changePercent": 0.27589703820801487,
+      "marketTime": "2026-11-25T00:53:13.000Z"
     },
     "jpykrw": {
       "name": "원/100엔",
       "unit": "원",
       "digits": 2,
-      "price": 840.9000000000001,
-      "change": -0.6999999999999318,
-      "changePercent": -0.08317490494295768,
-      "marketTime": "2026-11-24T23:51:44.000Z"
+      "price": 842.4,
+      "change": 2.699999999999932,
+      "changePercent": 0.32154340836012046,
+      "marketTime": "2026-11-25T01:16:46.000Z"
     },
     "kospi": {
       "name": "코스피",
       "unit": "",
       "digits": 2,
-      "price": 5006.03,
-      "change": 297.4899999999998,
-      "changePercent": 6.318094356212324,
-      "marketTime": "2026-11-24T11:05:40.000Z"
+      "price": 4767.18,
+      "change": -238.84999999999945,
+      "changePercent": -4.771245877471758,
+      "marketTime": "2026-11-25T00:57:40.000Z"
     },
     "kosdaq": {
       "name": "코스닥",
       "unit": "",
       "digits": 2,
-      "price": 665.88,
-      "change": 20.200000000000045,
-      "changePercent": 3.128484698302572,
-      "marketTime": "2026-11-24T11:05:40.000Z"
+      "price": 646.1,
+      "change": -19.779999999999973,
+      "changePercent": -2.970505196131431,
+      "marketTime": "2026-11-25T00:57:40.000Z"
     },
     "nasdaq": {
       "name": "나스닥",
