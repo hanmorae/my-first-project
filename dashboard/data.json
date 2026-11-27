@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-11-27T12:00:02.442Z",
+  "updatedAt": "2026-11-27T13:19:33.252Z",
   "items": {
     "usdkrw": {
       "name": "원/달러",
       "unit": "원",
       "digits": 2,
-      "price": 1334.93,
-      "change": -8.129999999999882,
-      "changePercent": -0.6053340878292766,
-      "marketTime": "2026-11-27T11:59:59.000Z"
+      "price": 1335.48,
+      "change": -7.579999999999927,
+      "changePercent": -0.5643828272750233,
+      "marketTime": "2026-11-27T13:19:31.000Z"
     },
     "jpykrw": {
       "name": "원/100엔",
       "unit": "원",
       "digits": 2,
-      "price": 835.5,
-      "change": -5.800000000000068,
-      "changePercent": -0.6894092475930189,
-      "marketTime": "2026-11-27T11:56:43.000Z"
+      "price": 834.0999999999999,
+      "change": -7.200000000000159,
+      "changePercent": -0.8558183763223771,
+      "marketTime": "2026-11-27T13:16:45.000Z"
     },
     "kospi": {
       "name": "코스피",
