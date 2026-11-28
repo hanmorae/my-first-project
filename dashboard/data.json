@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-28T03:59:15.603Z",
+  "updatedAt": "2026-11-28T05:04:56.346Z",
   "items": {
     "usdkrw": {
       "name": "원/달러",
@@ -50,10 +50,10 @@
       "name": "다우존스",
       "unit": "",
       "digits": 2,
-      "price": 50774.94,
-      "change": 591.9900000000052,
-      "changePercent": 1.179663610847918,
-      "marketTime": "2026-11-27T18:38:45.000Z"
+      "price": 50774.9,
+      "change": 592,
+      "changePercent": 1.1796847133186803,
+      "marketTime": "2026-11-27T21:00:00.000Z"
     }
   }
 }
